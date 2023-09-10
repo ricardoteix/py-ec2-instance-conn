@@ -11,7 +11,7 @@ With AWS CLI installed create your profile with the command:
 aws configure --profile my-profile
 ``
 
-This project run in Python 3. Download and install from (here)[Python](https://www.python.org/downloads/) and them, in the project folder, run this command to install dependencies:
+This project run in Python 3. Download and install from [here](https://www.python.org/downloads/) and them, in the project folder, run this command to install dependencies:
 
 ``
 pip install -r requirements.txt
