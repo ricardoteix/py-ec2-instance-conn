@@ -35,6 +35,7 @@ def describe_instances(profile: str):
                     'tags': instance['Tags'] if 'Tags' in instance else '',
                     'key_name': instance['KeyName'] if 'KeyName' in instance else '',
                     'vpc_id': instance['VpcId'],
+                    'az': instance['Placement']['AvailabilityZone']
                 }
             )
 
@@ -92,7 +93,7 @@ def list_instances(new_menu):
                     if tag['Key'] == 'Name':
                         instance_name = tag['Value']
 
-            print(f"{index + 1}. {instance['id']} ({instance_name})")
+            print(f"{index + 1}. {instance['id']} [{instance['vpc_id']} {instance['az']}] ({instance_name})")
             options += f"{index + 1}"
 
         print(f"{len(instances) + 1}. Voltar ao menu anterior")
@@ -120,7 +121,8 @@ def list_instances(new_menu):
 def create_credentials_submenu():
     global selected_profile
 
-    selected_profile = ''
+    # selected_profile = ''
+
     os.environ['ec2-conn-profile'] = selected_profile
 
     credentials = get_active_credentials()
@@ -246,6 +248,8 @@ def main():
             while not valid:
                 valid = create_instances_submenu()
 
+            print(valid)
+            time.sleep(5)
             open_terminal(valid)
 
             # if connected:
