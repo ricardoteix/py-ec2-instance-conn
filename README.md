@@ -1,28 +1,32 @@
-# Introduction
+[<img src="https://em-content.zobj.net/thumbs/120/openmoji/338/flag-united-states_1f1fa-1f1f8.png" alt="us flag" width="48"/>](./README_en.md)
 
-This project provides a menu to use AWS Instance Connect Endpoint to list and connect to EC2 instances using SSH through AWS CLI.
+# Introdução
+
+Este projeto provê um menu para usar o AWS Instance Connect Endpoint para listar e conectar à instâncias EC2 usando SSH por meio da AWS CLI.
 
 # Pre-requisites
 
-First of all you need to install AWS CLI. Follow the steps [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
-With AWS CLI installed create your profile with the command:
+Antes de usar você precisa instalar a AWS CLI. Siga os passos [aqui](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
+Com a AWS CLI instalada, crie seu profile com o comando:
 
 ``
-aws configure --profile my-profile
+aws configure --profile meu-profile
 ``
 
-This project run in Python 3. Download and install from (here)[Python](https://www.python.org/downloads/) and them, in the project folder, run this command to install dependencies:
+Este projeto usa Python 3. Baixe e instale o Python [aqui](https://www.python.org/downloads/) e então, na pasta do projeto, execute este comando para instalar as dependências:
 
 ``
 pip install -r requirements.txt
 ``
 
-# Using
+# Usando
 
-In a terminal access the project's folder and run:
+No terminal acesse a pasta do projeto e execute:
 
+``
 ~/> python app.py
+``
 
-The resulta must be as this example:
+O resultado deve ser como apresentado neste exemplo:
 
 ![Example](./assets/example.png)
