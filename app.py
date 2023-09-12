@@ -176,6 +176,7 @@ def create_rds_submenu():
 
     tunel_command = f'aws ec2-instance-connect open-tunnel --instance-id {instance_id} --remote-port 22 --local-port 22 --profile {selected_profile}'
     print("> Abrindo novo terminal com tunel. Mantenha esta janela aberta!")
+    print(f"> {tunel_command} ")
     open_terminal(tunel_command)
 
     print("> Solicitando informações para libera o acesso do RDS:")
@@ -186,9 +187,6 @@ def create_rds_submenu():
     os_user = input(f"Usuário do SO remoto (ubuntu ou ec2-user): ")
 
     rds_endpoint = rds_endpoint.encode(encoding='UTF-8', errors='strict').decode('utf8')
-
-    if ec2_key == '':
-        ec2_key = 'G:/Meu Drive/TI/AWS/chaves/mmm-dev.pem'
 
     if os_user == '':
         os_user = 'ubuntu'
