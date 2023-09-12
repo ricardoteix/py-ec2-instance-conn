@@ -4,6 +4,7 @@ iaac-demo/terraform.tfstate
 iaac-demo/terraform.tfstate.backup
 iaac-demo/.terraform.lock.hcl
 iaac-demo/.terraform.lock
+iaac-demo/.terraform.tfstate.lock.info
 .infracost
 
 
