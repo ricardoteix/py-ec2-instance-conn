@@ -1,0 +1,19 @@
+{
+  "name": "projeto-aws",
+  "version": "1.0.0",
+  "description": "Apenas um arquivo para facilitar a execução dos comandos do terraform pelo VisualStudio",
+  "main": "index.js",
+  "scripts": {
+    "init": "terraform init",
+    "output": "terraform output -json",
+    "plan": "terraform plan",
+    "apply": "terraform apply",
+    "auto-apply": "terraform apply --auto-approve",
+    "powershel-graph": "terraform graph | Out-File -FilePath projeto.dot",
+    "s3-user-secret": "terraform output -raw s3-user-secret",
+    "smtp_password": "terraform output -raw smtp_password",
+    "destroy-apply": "terraform destroy --auto-approve"
+  },
+  "author": "",
+  "license": "ISC"
+}

@@ -1,3 +1,12 @@
+# Terraform
+iaac-demo/.terraform/**
+iaac-demo/terraform.tfstate
+iaac-demo/terraform.tfstate.backup
+iaac-demo/.terraform.lock.hcl
+iaac-demo/.terraform.lock
+.infracost
+
+
 # Windows
 *.bat
 *.lnk
