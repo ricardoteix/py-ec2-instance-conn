@@ -7,6 +7,7 @@ iaac-demo/.terraform.lock
 iaac-demo/.terraform.tfstate.lock.info
 .infracost
 
+*.pem
 
 # Windows
 *.bat
