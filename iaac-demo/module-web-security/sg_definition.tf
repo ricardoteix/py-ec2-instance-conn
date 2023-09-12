@@ -37,8 +37,7 @@ resource "aws_security_group" "sg_projeto_web" {
     from_port        = 22
     to_port          = 22
     protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
+    security_groups = [aws_security_group.sg_projeto_eice.id]
   }
 
   egress {
@@ -237,17 +236,15 @@ resource "aws_security_group" "sg_projeto_ses" {
 
 }
 
-
-
-resource "aws_security_group" "sg_projeto_ecr" {
-  name        = "sg_${var.tags-sufix}_ecr"
-  description = "Allow web ECR"
+resource "aws_security_group" "sg_projeto_eice" {
+  name        = "sg_${var.tags-sufix}_eice"
+  description = "EC2 Instance Endpoint"
   vpc_id      =  var.vpc-id
 
   ingress {
-    description      = "HTTPS"
-    from_port        = 443
-    to_port          = 443
+    description      = "SSH"
+    from_port        = 22
+    to_port          = 22
     protocol         = "tcp"
     cidr_blocks      = ["0.0.0.0/0"]
     ipv6_cidr_blocks = ["::/0"]
@@ -262,6 +259,6 @@ resource "aws_security_group" "sg_projeto_ecr" {
   }
 
   tags = {
-    Name = "sg-${var.tags-sufix}-ecr"
+    Name = "sg-${var.tags-sufix}-eice"
   }
 }

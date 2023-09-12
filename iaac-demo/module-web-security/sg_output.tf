@@ -22,6 +22,6 @@ output "sg-ses" {
   value = aws_security_group.sg_projeto_ses
 }
 
-output "sg-ecr" {
-  value = aws_security_group.sg_projeto_ecr
+output "sg-eice" {
+  value = aws_security_group.sg_projeto_eice
 }
