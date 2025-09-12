@@ -197,12 +197,27 @@ def create_rds_submenu():
     print(f"> {tunel_command} ")
     open_terminal(tunel_command)
 
-    print("> Solicitando informações para libera o acesso do RDS:")
+    print("> Solicitando informações para libera o acesso do RDS: (digite /q para voltar)")
     rds_endpoint = input("Host do RDS: ")
+    if rds_endpoint == '/q':
+        print("Voltando ao menu principal...")
+        return True
     local_port = input("Porta local do RDS: ")
+    if local_port == '/q':
+        print("Voltando ao menu principal...")
+        return True
     remote_port = input("Porta remota do RDS: ")
+    if remote_port == '/q':
+        print("Voltando ao menu principal...")
+        return True
     ec2_key = input(f"Caminho da key da instância ({key_name}): ")
+    if ec2_key == '/q':
+        print("Voltando ao menu principal...")
+        return True
     os_user = input(f"Usuário do SO remoto (ubuntu ou ec2-user): ")
+    if os_user == '/q':
+        print("Voltando ao menu principal...")
+        return True
 
     rds_endpoint = rds_endpoint.encode(encoding='UTF-8', errors='strict').decode('utf8')
 
