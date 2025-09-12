@@ -4,6 +4,7 @@ import sys
 import time
 
 import boto3
+import botocore.exceptions
 
 from src.credentials import get_active_credentials
 
@@ -13,18 +14,29 @@ connected = False
 
 
 def describe_instances(profile: str):
-    session = boto3.Session(profile_name=profile)
-    ec2_client = session.client('ec2')
-    response = ec2_client.describe_instances(
-        Filters=[
-            {
-                'Name': 'instance-state-name',
-                'Values': [
-                    'running',
-                ]
-            },
-        ]
-    )
+
+    try:
+        session = boto3.Session(profile_name=profile)
+        ec2_client = session.client('ec2')
+        response = ec2_client.describe_instances(
+            Filters=[
+                {
+                    'Name': 'instance-state-name',
+                    'Values': [
+                        'running',
+                    ]
+                },
+            ]
+        )
+    except botocore.exceptions.NoRegionError as e:
+        print("Erro: Nenhuma região configurada. Verifique suas configurações do AWS CLI.")
+        return []
+    except boto3.exceptions.ProfileNotFound as e:
+        print(f"Erro: O profile '{profile}' não foi encontrado. Verifique se o profile está configurado corretamente.")
+        return []
+    except Exception as e:
+        print(f"Erro ao descrever instâncias: {e}")
+        return []
 
     instances = []
     for reservation in response['Reservations']:
@@ -65,6 +77,12 @@ def create_instances_submenu():
     global selected_profile
 
     instance = list_instances('Conectar à instância')
+
+    if type(instance) == bool and instance:
+        return True
+
+    if not instance:
+        return False
 
     instance_id = instance['id']
     key_name = instance['key_name']
@@ -245,6 +263,9 @@ def main():
             valid = create_instances_submenu()
             while not valid:
                 valid = create_instances_submenu()
+
+            if valid is True:
+                continue
 
             print(valid)
             time.sleep(5)
