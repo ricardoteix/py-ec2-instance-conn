@@ -13,6 +13,20 @@ os.environ['ec2-conn-profile'] = selected_profile
 connected = False
 
 
+def get_vpc_name(ec2_client, vpc_id):
+    try:
+        response = ec2_client.describe_vpcs(VpcIds=[vpc_id])
+        if 'Vpcs' in response and response['Vpcs']:
+            vpc = response['Vpcs'][0]
+            if 'Tags' in vpc:
+                for tag in vpc['Tags']:
+                    if tag['Key'] == 'Name':
+                        return tag['Value']
+    except Exception as e:
+        print(f"Error getting VPC name for {vpc_id}: {e}")
+    return '-'
+
+
 def describe_instances(profile: str):
 
     try:
@@ -41,12 +55,15 @@ def describe_instances(profile: str):
     instances = []
     for reservation in response['Reservations']:
         for instance in reservation['Instances']:
+            vpc_id = instance['VpcId']
+            vpc_name = get_vpc_name(ec2_client, vpc_id)
             instances.append(
                 {
                     'id': instance['InstanceId'],
                     'tags': instance['Tags'] if 'Tags' in instance else '',
                     'key_name': instance['KeyName'] if 'KeyName' in instance else '',
-                    'vpc_id': instance['VpcId'],
+                    'vpc_id': vpc_id,
+                    'vpc_name': vpc_name,
                     'az': instance['Placement']['AvailabilityZone']
                 }
             )
@@ -111,7 +128,7 @@ def list_instances(new_menu):
                     if tag['Key'] == 'Name':
                         instance_name = tag['Value']
 
-            print(f"{index + 1}. {instance['id']} [{instance['vpc_id']} {instance['az']}] ({instance_name})")
+            print(f"{index + 1}. {instance['id']} [{instance['vpc_name']} - {instance['vpc_id']} - {instance['az']}] ({instance_name})")
             options += f"{index + 1}"
 
         print(f"{len(instances) + 1}. Voltar ao menu anterior")
