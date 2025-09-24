@@ -11,6 +11,38 @@ from src.credentials import get_active_credentials
 selected_profile = ''
 os.environ['ec2-conn-profile'] = selected_profile
 connected = False
+vpc_id = ''
+
+
+def describe_vpcs(profile: str):
+    try:
+        session = boto3.Session(profile_name=profile)
+        ec2_client = session.client('ec2')
+        response = ec2_client.describe_vpcs()
+    except botocore.exceptions.NoRegionError as e:
+        print("Erro: Nenhuma região configurada. Verifique suas configurações do AWS CLI.")
+        return []
+    except boto3.exceptions.ProfileNotFound as e:
+        print(f"Erro: O profile '{profile}' não foi encontrado. Verifique se o profile está configurado corretamente.")
+        return []
+    except Exception as e:
+        print(f"Erro ao descrever VPCs: {e}")
+        return []
+
+    vpcs = []
+    for vpc in response['Vpcs']:
+        vpc_name = '-'
+        if 'Tags' in vpc:
+            for tag in vpc['Tags']:
+                if tag['Key'] == 'Name':
+                    vpc_name = tag['Value']
+        vpcs.append(
+            {
+                'id': vpc['VpcId'],
+                'name': vpc_name
+            }
+        )
+    return vpcs
 
 
 def get_vpc_name(ec2_client, vpc_id):
@@ -27,20 +59,29 @@ def get_vpc_name(ec2_client, vpc_id):
     return '-'
 
 
-def describe_instances(profile: str):
+def describe_instances(profile: str, vpc_id: str = None):
 
     try:
         session = boto3.Session(profile_name=profile)
         ec2_client = session.client('ec2')
+
+        filters = [
+            {
+                'Name': 'instance-state-name',
+                'Values': [
+                    'running',
+                ]
+            },
+        ]
+
+        if vpc_id:
+            filters.append({
+                'Name': 'vpc-id',
+                'Values': [vpc_id]
+            })
+
         response = ec2_client.describe_instances(
-            Filters=[
-                {
-                    'Name': 'instance-state-name',
-                    'Values': [
-                        'running',
-                    ]
-                },
-            ]
+            Filters=filters
         )
     except botocore.exceptions.NoRegionError as e:
         print("Erro: Nenhuma região configurada. Verifique suas configurações do AWS CLI.")
@@ -111,9 +152,10 @@ def create_instances_submenu():
 
 def list_instances(new_menu):
     global selected_profile
+    global vpc_id
 
     print("> Listando instâncias. Aguarde...")
-    instances = describe_instances(selected_profile)
+    instances = describe_instances(selected_profile, vpc_id)
 
     while True:
         clear_screen()
@@ -136,10 +178,14 @@ def list_instances(new_menu):
         options += f"{len(instances) + 1}"
 
         choice = input("Escolha uma opção: ")
-        if choice not in options:
+        if choice not in options and choice != '/q':
             print("-- Opção inválida. Selecione uma das opções possíveis.")
             time.sleep(3)
             return False
+
+        if choice == '/q':
+            print("Voltando...")
+            return True
 
         selected_index = int(choice)
 
@@ -189,6 +235,46 @@ def create_credentials_submenu():
                 return True
 
         if selected_index == len(credentials) + 1:
+            print("Voltando...")
+
+        return True
+
+
+def select_vpc_submenu():
+    global selected_profile
+    global vpc_id
+
+    print("> Listando VPCs. Aguarde...")
+    vpcs = describe_vpcs(selected_profile)
+
+    while True:
+        clear_screen()
+        print(f"Menu de Opções -> Selecionar VPC")
+        print("-------------------------------------")
+        print("Selecione a VPC:")
+        options = ""
+        for index, vpc in enumerate(vpcs):
+            print(f"{index + 1}. {vpc['id']} ({vpc['name']})")
+            options += f"{index + 1}"
+
+        print(f"{len(vpcs) + 1}. Voltar ao menu anterior")
+
+        options += f"{len(vpcs) + 1}"
+
+        choice = input("Escolha uma opção: ")
+        if choice not in options:
+            print("-- Opção inválida. Selecione uma das opções possíveis.")
+            time.sleep(3)
+            return False
+
+        selected_index = int(choice)
+
+        for index, vpc in enumerate(vpcs):
+            if selected_index - 1 == index:
+                vpc_id = vpc['id']
+                return True
+
+        if selected_index == len(vpcs) + 1:
             print("Voltando...")
 
         return True
@@ -263,6 +349,7 @@ def execute_command(command):
 
 def main():
     global connected
+    global vpc_id
     while True:
         clear_screen()
         if selected_profile == '':
@@ -270,11 +357,15 @@ def main():
         else:
             print(f"[ Profile selecionado: {selected_profile} ]")
 
+        if vpc_id != '':
+            print(f"[ VPC selecionada: {vpc_id} ]")
+
         print("Menu de Opções:\n")
         print("1. Selecionar Profile")
-        print("2. Conectar à instância")
-        print("3. Liberar acesso para RDS")
-        print("4. Sair")
+        print("2. Selecionar VPC")
+        print("3. Conectar à instância")
+        print("4. Liberar acesso para RDS")
+        print("5. Sair")
 
         choice = input("\nEscolha uma opção: ")
 
@@ -285,10 +376,27 @@ def main():
                 valid = create_credentials_submenu()
 
         elif choice == "2":
+            if selected_profile == '':
+                print("## Nenhum profile selecionado. ")
+                print("## É preciso selecionar primeiro um profile.")
+                input("Pressione Enter para continuar...")
+                continue
+
+            valid = select_vpc_submenu()
+            while not valid:
+                valid = select_vpc_submenu()
+
+        elif choice == "3":
 
             if selected_profile == '':
                 print("## Nenhum profile selecionado. ")
                 print("## É preciso selecionar primeiro um profile.")
+                input("Pressione Enter para continuar...")
+                continue
+
+            if vpc_id == '':
+                print("## Nenhuma VPC selecionada. ")
+                print("## É preciso selecionar primeiro uma VPC.")
                 input("Pressione Enter para continuar...")
                 continue
 
@@ -306,7 +414,7 @@ def main():
             # if connected:
             #     break
 
-        elif choice == "3":
+        elif choice == "4":
 
             if selected_profile == '':
                 print("## Nenhum profile selecionado. ")
@@ -318,7 +426,7 @@ def main():
             while not valid:
                 valid = create_rds_submenu()
 
-        elif choice == "4":
+        elif choice == "5":
             print("Saindo do programa...")
             break
         else:
