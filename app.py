@@ -71,6 +71,49 @@ def describe_instance_connect_endpoints(profile: str, vpc_id: str):
     else:
         return None
 
+def describe_rds_instances(profile: str, vpc_id: str):
+    try:
+        session = boto3.Session(profile_name=profile)
+        rds_client = session.client('rds')
+        response = rds_client.describe_db_instances()
+    except botocore.exceptions.NoRegionError as e:
+        print("Erro: Nenhuma região configurada. Verifique suas configurações do AWS CLI.")
+        return []
+    except boto3.exceptions.ProfileNotFound as e:
+        print(f"Erro: O profile '{profile}' não foi encontrado. Verifique se o profile está configurado corretamente.")
+        return []
+    except Exception as e:
+        print(f"Erro ao descrever instâncias RDS: {e}")
+        return []
+
+    rds_instances = []
+    for db_instance in response['DBInstances']:
+        db_subnet_group = db_instance.get('DBSubnetGroup')
+        if not db_subnet_group:
+            continue
+
+        subnet_group_name = db_subnet_group.get('DBSubnetGroupName')
+        if not subnet_group_name:
+            continue
+
+        try:
+            subnet_group_response = rds_client.describe_db_subnet_groups(DBSubnetGroupName=subnet_group_name)
+            if not subnet_group_response or not subnet_group_response.get('DBSubnetGroups'):
+                continue
+
+            vpc = subnet_group_response['DBSubnetGroups'][0].get('VpcId')
+            if vpc == vpc_id:
+                rds_instances.append(
+                    {
+                        'id': db_instance['DBInstanceIdentifier'],
+                        'endpoint': db_instance['Endpoint']['Address'],
+                        'port': db_instance['Endpoint']['Port']
+                    }
+                )
+        except Exception as e:
+            print(f"Erro ao descrever sub-rede do RDS {subnet_group_name}: {e}")
+
+    return rds_instances
 
 def get_vpc_name(ec2_client, vpc_id):
     try:
@@ -306,6 +349,46 @@ def select_vpc_submenu():
 
         return True
 
+        return True
+
+def list_rds_instances(new_menu):
+    global selected_profile
+    global vpc_id
+
+    print("> Listando instâncias RDS. Aguarde...")
+    rds_instances = describe_rds_instances(selected_profile, vpc_id)
+
+    while True:
+        clear_screen()
+        print(f"Menu de Opções -> {new_menu}")
+        print("-------------------------------------")
+        print("Selecione a instância RDS:")
+        options = ""
+        for index, rds_instance in enumerate(rds_instances):
+            print(f"{index + 1}. {rds_instance['id']}")
+            options += f"{index + 1}"
+
+        print(f"{len(rds_instances) + 1}. Voltar ao menu anterior")
+
+        options += f"{len(rds_instances) + 1}"
+
+        choice = input("Escolha uma opção: ")
+        if choice not in options:
+            print("-- Opção inválida. Selecione uma das opções possíveis.")
+            time.sleep(3)
+            return False
+
+        selected_index = int(choice)
+
+        for index, rds_instance in enumerate(rds_instances):
+            if selected_index - 1 == index:
+                return rds_instance
+
+        if selected_index == len(rds_instances) + 1:
+            print("Voltando...")
+
+        return True
+
 def create_tunnel_submenu():
     global selected_profile
     global vpc_id
@@ -345,6 +428,14 @@ def create_rds_submenu():
     if not instance:
         return False
 
+    rds_instance = list_rds_instances('Liberar acesso para RDS')
+
+    if type(rds_instance) == bool and rds_instance:
+        return True
+
+    if not rds_instance:
+        return False
+
     instance_id = instance['id']
     key_name = instance['key_name']
     vpc_id = instance['vpc_id']
@@ -355,16 +446,12 @@ def create_rds_submenu():
     open_terminal(tunel_command)
 
     print("> Solicitando informações para libera o acesso do RDS: (digite /q para voltar)")
-    rds_endpoint = input("Host do RDS: ")
-    if rds_endpoint == '/q':
-        print("Voltando ao menu principal...")
-        return True
+
+    rds_endpoint = rds_instance['endpoint']
+    remote_port = rds_instance['port']
+
     local_port = input("Porta local do RDS: ")
     if local_port == '/q':
-        print("Voltando ao menu principal...")
-        return True
-    remote_port = input("Porta remota do RDS: ")
-    if remote_port == '/q':
         print("Voltando ao menu principal...")
         return True
     ec2_key = input(f"Caminho da key da instância ({key_name}): ")
