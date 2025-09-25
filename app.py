@@ -44,6 +44,33 @@ def describe_vpcs(profile: str):
         )
     return vpcs
 
+def describe_instance_connect_endpoints(profile: str, vpc_id: str):
+    try:
+        session = boto3.Session(profile_name=profile)
+        ec2_client = session.client('ec2')
+        response = ec2_client.describe_instance_connect_endpoints(
+            Filters=[
+                {
+                    'Name': 'vpc-id',
+                    'Values': [vpc_id]
+                }
+            ]
+        )
+    except botocore.exceptions.NoRegionError as e:
+        print("Erro: Nenhuma região configurada. Verifique suas configurações do AWS CLI.")
+        return None
+    except boto3.exceptions.ProfileNotFound as e:
+        print(f"Erro: O profile '{profile}' não foi encontrado. Verifique se o profile está configurado corretamente.")
+        return None
+    except Exception as e:
+        print(f"Erro ao descrever Instance Connect Endpoints: {e}")
+        return None
+
+    if 'InstanceConnectEndpoints' in response and response['InstanceConnectEndpoints']:
+        return response['InstanceConnectEndpoints'][0]['InstanceConnectEndpointId']
+    else:
+        return None
+
 
 def get_vpc_name(ec2_client, vpc_id):
     try:
@@ -279,6 +306,33 @@ def select_vpc_submenu():
 
         return True
 
+def create_tunnel_submenu():
+    global selected_profile
+    global vpc_id
+
+    print("> Buscando Instance Connect Endpoint. Aguarde...")
+    endpoint_id = describe_instance_connect_endpoints(selected_profile, vpc_id)
+
+    if not endpoint_id:
+        print(f"## Nenhum Instance Connect Endpoint encontrado para a VPC {vpc_id}.")
+        input("Pressione Enter para continuar...")
+        return True
+
+    instance = list_instances('Abrir túnel com EC2 Instance Connect Endpoint')
+
+    if type(instance) == bool and instance:
+        return True
+
+    if not instance:
+        return False
+
+    instance_id = instance['id']
+
+    print("> Abrindo túnel. Aguarde...")
+    command = f'aws ec2-instance-connect open-tunnel --instance-connect-endpoint-id {endpoint_id} --instance-id {instance_id} --remote-port 22 --local-port 22 --profile {selected_profile}'
+    open_terminal(command)
+    return True
+
 
 def create_rds_submenu():
     global selected_profile
@@ -364,8 +418,9 @@ def main():
         print("1. Selecionar Profile")
         print("2. Selecionar VPC")
         print("3. Conectar à instância")
-        print("4. Liberar acesso para RDS")
-        print("5. Sair")
+        print("4. Abrir túnel com EC2 Instance Connect Endpoint")
+        print("5. Liberar acesso para RDS")
+        print("6. Sair")
 
         choice = input("\nEscolha uma opção: ")
 
@@ -422,11 +477,29 @@ def main():
                 input("Pressione Enter para continuar...")
                 continue
 
+            if vpc_id == '':
+                print("## Nenhuma VPC selecionada. ")
+                print("## É preciso selecionar primeiro uma VPC.")
+                input("Pressione Enter for continue...")
+                continue
+
+            valid = create_tunnel_submenu()
+            while not valid:
+                valid = create_tunnel_submenu()
+
+        elif choice == "5":
+
+            if selected_profile == '':
+                print("## Nenhum profile selecionado. ")
+                print("## É preciso selecionar primeiro um profile.")
+                input("Pressione Enter para continuar...")
+                continue
+
             valid = create_rds_submenu()
             while not valid:
                 valid = create_rds_submenu()
 
-        elif choice == "5":
+        elif choice == "6":
             print("Saindo do programa...")
             break
         else:
