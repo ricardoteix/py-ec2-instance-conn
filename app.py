@@ -495,6 +495,12 @@ def main():
                 input("Pressione Enter para continuar...")
                 continue
 
+            if vpc_id == '':
+                print("## Nenhuma VPC selecionada. ")
+                print("## É preciso selecionar primeiro uma VPC.")
+                input("Pressione Enter para continuar...")
+                continue
+
             valid = create_rds_submenu()
             while not valid:
                 valid = create_rds_submenu()
